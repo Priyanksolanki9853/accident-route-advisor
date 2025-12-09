@@ -7,6 +7,7 @@ import numpy as np
 import os
 import random
 import gc
+import requests # <--- NEW: Required for Chatbot to talk to Google
 
 app = Flask(__name__)
 CORS(app)
@@ -17,9 +18,42 @@ ox.settings.timeout = 180
 
 @app.route('/')
 def home():
-    # Securely fetch the key from Render's Environment Variables
-    api_key = os.environ.get("GEMINI_API_KEY", "") 
-    return render_template('Index.html', gemini_key=api_key)
+    # We no longer need to pass the key to the frontend!
+    return render_template('Index.html')
+
+# --- NEW: SMART CHATBOT ROUTE ---
+@app.route('/api/chat', methods=['POST'])
+def chat_proxy():
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        
+        # Securely get key from Render Environment
+        api_key = os.environ.get("GEMINI_API_KEY")
+        
+        if not api_key:
+            return jsonify({"error": "API Key is missing on the server."}), 500
+
+        # Call Google Gemini API (Server-to-Server)
+        # Using gemini-1.5-flash for speed/cost, fallback to gemini-pro if needed
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        
+        payload = {
+            "contents": [{
+                "parts": [{"text": "You are SafeBot, a helpful road safety assistant. Keep answers concise (max 50 words). User says: " + user_message}]
+            }]
+        }
+        
+        # Send request to Google
+        response = requests.post(url, json=payload)
+        
+        # Return Google's answer to our Frontend
+        return jsonify(response.json())
+
+    except Exception as e:
+        print(f"Chat Error: {e}")
+        return jsonify({"error": str(e)}), 500
+# --------------------------------
 
 @app.route('/api/get-route', methods=['POST'])
 def get_route_api():
