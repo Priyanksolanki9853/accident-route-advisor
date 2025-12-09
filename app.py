@@ -6,14 +6,13 @@ import numpy as np
 import cv2
 import os
 import random
-import gc  # Garbage Collector for Memory Management
+import gc  # Garbage Collector
 
 # --- CONFIGURATION ---
 app = Flask(__name__)
 CORS(app)
 
-# SETTINGS FOR RENDER FREE TIER (Critical)
-# We limit the download size to prevent "Out of Memory" crashes
+# SETTINGS FOR RENDER FREE TIER
 ox.settings.max_query_area_size = 2500000000
 ox.settings.timeout = 180 
 
@@ -42,8 +41,10 @@ def get_route_api():
         if not start_coords or not end_coords:
             return jsonify({"error": "Could not find location coordinates."}), 400
 
-        # Get the graph (Optimized for Free Tier)
+        # --- SMART GRAPH LOADER (FIXED) ---
+        # Calculates exactly how much map we need
         graph = get_safe_graph(start_coords, end_coords)
+        # ----------------------------------
         
         # Find nearest nodes
         orig = ox.distance.nearest_nodes(graph, start_coords[1], start_coords[0])
@@ -58,7 +59,7 @@ def get_route_api():
             total_dist_km = round(total_dist_meters / 1000, 2)
             
         except nx.NetworkXNoPath:
-            return jsonify({"error": "No route found. Try a closer destination."}), 404
+            return jsonify({"error": "No route found. Try points closer together."}), 404
         except Exception as e:
             return jsonify({"error": f"Routing error: {str(e)}"}), 500
 
@@ -80,7 +81,7 @@ def get_route_api():
             else:
                 pos = [(graph.nodes[u]['y'], graph.nodes[u]['x']), (graph.nodes[v]['y'], graph.nodes[v]['x'])]
 
-            # Analyze Risk
+            # Analyze Risk (Your Original Logic)
             risk, color, info = analyze_risk(u, v, graph, cv_score)
             
             # Update Stats
@@ -95,11 +96,11 @@ def get_route_api():
                 "info": ", ".join(info)
             })
 
-        # --- MEMORY CLEANUP (CRITICAL FOR FREE TIER) ---
+        # --- MEMORY CLEANUP ---
         del graph
         del route
         gc.collect() 
-        # -----------------------------------------------
+        # ----------------------
 
         return jsonify({
             "segments": segments, 
@@ -112,7 +113,7 @@ def get_route_api():
         print(f"Server Error: {e}")
         return jsonify({"error": str(e)}), 500
 
-# --- 1. GEOMETRY ENGINE ---
+# --- 1. GEOMETRY ENGINE (KEPT ORIGINAL) ---
 def calculate_curvature(geometry):
     if not geometry: return 0 
     coords = list(geometry.coords)
@@ -127,9 +128,8 @@ def calculate_curvature(geometry):
             total_turn += np.degrees(angle)
     return total_turn
 
-# --- 2. COMPUTER VISION ENGINE ---
+# --- 2. COMPUTER VISION ENGINE (KEPT ORIGINAL) ---
 def analyze_image_cv():
-    # Only run if file exists to prevent crashes
     path = "test_road.jpg"
     if not os.path.exists(path): return 0
     
@@ -143,7 +143,7 @@ def analyze_image_cv():
     if score > 2: return 10
     return 0
 
-# --- 3. RISK ENGINE ---
+# --- 3. RISK ENGINE (KEPT ORIGINAL) ---
 def analyze_risk(u, v, graph, cv_score):
     data = graph.get_edge_data(u, v)[0]
     risk = 0
@@ -176,19 +176,32 @@ def analyze_risk(u, v, graph, cv_score):
     if risk > 20: return "Moderate", "#F5A623", reasons
     return "Low", "#20BD5F", ["Safe Route"]
 
-# --- 4. ROUTING ENGINE (OPTIMIZED) ---
+# --- 4. ROUTING ENGINE (FIXED FOR MEMORY) ---
 def get_safe_graph(start_coords, end_coords):
     mid_lat = (start_coords[0] + end_coords[0]) / 2
     mid_lon = (start_coords[1] + end_coords[1]) / 2
     
-    # Force radius to 3000m (3km) max to save RAM on Render Free Tier
-    # If users try to route between cities, this ensures we only download
-    # a small chunk of the map around the midpoint, preventing crashes.
-    radius = 3000 
+    # Calculate Distance roughly (in meters)
+    # 1 degree lat is approx 111km (111000 meters)
+    lat_diff = abs(start_coords[0] - end_coords[0]) * 111000
+    lon_diff = abs(start_coords[1] - end_coords[1]) * 111000
     
-    print(f" ⬇️ Downloading Map Radius: {int(radius)}m at {mid_lat}, {mid_lon}")
+    # Pythagorean distance
+    dist_approx = (lat_diff**2 + lon_diff**2)**0.5
     
-    # simplify=True reduces graph size
+    # DYNAMIC RADIUS:
+    # Instead of fixed 3000m, we use (Distance / 2) + Buffer
+    # If route is 500m -> Radius is ~500m (Tiny! Very fast)
+    # If route is 2000m -> Radius is ~1500m
+    radius = (dist_approx / 2) + 500 
+    
+    # HARD CAP: Do not exceed 2500m on Free Tier to avoid crashes
+    if radius > 2500: 
+        radius = 2500
+        print("⚠️ Large area requested. Clamped to 2500m.")
+    
+    print(f" ⬇️ Downloading Map. Trip: {int(dist_approx)}m. Radius: {int(radius)}m")
+    
     return ox.graph_from_point((mid_lat, mid_lon), dist=radius, network_type='drive', simplify=True)
 
 # --- MAIN ---
