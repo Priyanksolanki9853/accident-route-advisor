@@ -36,7 +36,7 @@ def chat_proxy():
 
         # Call Google Gemini API (Server-to-Server)
         # Using gemini-1.5-flash for speed/cost, fallback to gemini-pro if needed
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={api_key}"
         
         payload = {
             "contents": [{
