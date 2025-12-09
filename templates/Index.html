@@ -206,11 +206,29 @@
         .weather-widget {
             display: flex; align-items: center; justify-content: space-between;
             background: linear-gradient(135deg, #3B82F6, #2563EB); color: white;
-            padding: 20px; border-radius: 16px; margin-bottom: 30px;
+            padding: 15px; border-radius: 12px; margin-top: 15px;
             box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+            min-width: 250px;
         }
         .weather-temp { font-size: 28px; font-weight: 800; font-family: var(--font-head); }
         .weather-desc { font-size: 11px; text-transform: uppercase; font-weight: 600; }
+
+        /* NEW FLOATING AQI PANEL */
+        .aqi-float-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 16px;
+            border: 1px solid var(--border-col);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
         .controls-row { display: flex; flex-direction: column; gap: 20px; margin-bottom: 25px; border-bottom: 1px solid var(--border-col); padding-bottom: 25px; }
         
@@ -531,26 +549,6 @@
         <aside class="sidebar">
             <div class="sidebar-content">
                 
-                <div class="weather-widget" id="weather-box" style="display:none; gap: 20px; align-items: center;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <i class="fa-solid fa-cloud-sun" style="font-size:28px; opacity: 0.9;"></i>
-                        <div>
-                            <div style="font-size:24px; font-weight:800;" id="w-temp">--°C</div>
-                            <div class="weather-desc">Temp</div>
-                        </div>
-                    </div>
-
-                    <div style="width:1px; height:35px; background:rgba(255,255,255,0.3);"></div>
-
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <i class="fa-solid fa-wind" style="font-size:28px; opacity: 0.9;"></i>
-                        <div>
-                            <div style="font-size:24px; font-weight:800;" id="w-aqi">--</div>
-                            <div class="weather-desc">AQI Index</div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="controls-row">
                     <div class="input-wrapper">
                         <label class="input-label">Start Point</label>
@@ -572,23 +570,6 @@
                             <div class="loc-chip" onclick="loadLoc('Work', 'end')">Load Work</div>
                         </div>
                     </div>
-
-                    <button onclick="checkLiveAQI" style="
-                        width: 100%; 
-                        padding: 18px; 
-                        background: linear-gradient(90deg, #0ea5e9, #0284c7); 
-                        color: white; 
-                        border: none; 
-                        border-radius: 12px; 
-                        font-weight: 800; 
-                        text-transform: uppercase; 
-                        font-size: 13px; 
-                        cursor: pointer; 
-                        margin-top: 5px; 
-                        margin-bottom: 5px;
-                        font-family: 'Montserrat', sans-serif;">
-                        <i class="fa-solid fa-wind"></i> Check Live AQI
-                    </button>
 
                     <button id="btn" class="tss-btn" onclick="findRoute()">Analyze Route</button>
                 </div>
@@ -642,6 +623,44 @@
                     <i class="fa-solid fa-triangle-exclamation" style="color:var(--tss-red);"></i> REPORT HAZARD
                 </div>
             </div>
+
+            <div class="aqi-float-panel">
+                <button onclick="checkLiveAQI()" style="
+                    padding: 12px 20px; 
+                    background: linear-gradient(90deg, #0ea5e9, #0284c7); 
+                    color: white; 
+                    border: none; 
+                    border-radius: 30px; 
+                    font-weight: 800; 
+                    text-transform: uppercase; 
+                    font-size: 11px; 
+                    cursor: pointer; 
+                    font-family: 'Montserrat', sans-serif;
+                    box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);">
+                    <i class="fa-solid fa-wind"></i> Check Live AQI
+                </button>
+
+                <div class="weather-widget" id="weather-box" style="display:none; gap: 20px; align-items: center; background:transparent; box-shadow:none; padding: 15px 0 0 0; margin-top:0;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-cloud-sun" style="font-size:24px; opacity: 0.9; color: var(--text-main);"></i>
+                        <div>
+                            <div style="font-size:20px; font-weight:800; color: var(--text-main);" id="w-temp">--°C</div>
+                            <div class="weather-desc" style="color: var(--text-sub);">Temp</div>
+                        </div>
+                    </div>
+
+                    <div style="width:1px; height:30px; background:rgba(0,0,0,0.1);"></div>
+
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="fa-solid fa-wind" style="font-size:24px; opacity: 0.9; color: var(--text-main);"></i>
+                        <div>
+                            <div style="font-size:20px; font-weight:800;" id="w-aqi">--</div>
+                            <div class="weather-desc" style="color: var(--text-sub);">AQI Index</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -1005,7 +1024,9 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition((pos) => {
                     document.getElementById('start').value = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-                    getWeather(pos.coords.latitude, pos.coords.longitude);
+                    // REMOVED getWeather() from here to respect the "only on button click" rule if desired,
+                    // but usually when locating user for input, we don't show AQI unless asked.
+                    // Kept strictly to inputs.
                 });
             }
         }
@@ -1115,7 +1136,9 @@
             try {
                 let startLat = start.split(',')[0].trim();
                 let startLon = start.split(',')[1].trim();
-                getWeather(startLat, startLon);
+                
+                // REMOVED getWeather(startLat, startLon) FROM HERE 
+                // TO ENSURE AQI IS ONLY VISIBLE WHEN CLICKING THE BUTTON
 
                 // --- CRITICAL FIX FOR DEPLOYMENT ---
                 // Changed from 'http://127.0.0.1:5000/api/get-route' to relative path '/api/get-route'
