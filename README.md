@@ -1,4 +1,5 @@
-<img width="1893" height="1066" alt="image" src="https://github.com/user-attachments/assets/b7ae875a-85cf-46be-a5d7-76e9722f4af7" />
+<img width="1024" height="559" alt="image" src="https://github.com/user-attachments/assets/cd99946f-177a-49cc-98b2-41dfb06a330a" />
+
 
 # 🛡️ SafeRoute AI | AI-Powered Accident Prevention System
 
@@ -8,7 +9,7 @@
 ![Mapping](https://img.shields.io/badge/Mapping-OSMnx%20%7C%20Leaflet-blueviolet)
 ![Status](https://img.shields.io/badge/Status-Live-success)
 
-> **Final Major Project 2025** > *Engineering safer futures by prioritizing survival over speed.*
+> **EPICS 2025** > *Engineering safer futures by prioritizing survival over speed.*
 
 ---
 
@@ -107,7 +108,7 @@ If you want to run this project on your own machine for full performance (unlimi
 
 ## 🤝 Contact & Privacy
 
-* **Developer:** [Priyank Solanki]
+* **Developer:** Priyank Solanki
 * **Contact:** [priyanksolanki9853@gmail.com](mailto:priyanksolanki9853@gmail.com)
 * **Privacy Policy:** This application processes location data in real-time for routing purposes only. No user location history is stored on our servers.
 
