@@ -18,7 +18,6 @@ ox.settings.timeout = 180
 
 @app.route('/')
 def home():
-    # We no longer need to pass the key to the frontend!
     return render_template('Index.html')
 
 # --- UPGRADED: HYBRID CHATBOT ROUTE (Never Fails) ---
