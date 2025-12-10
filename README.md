@@ -2,7 +2,8 @@
 
 
 
-# 🛡️ SafeRoute AI | AI-Powered Accident Prevention System
+# 🛡️ SafeRoute AI | 
+AI-Powered Accident Prevention System
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
 ![Flask](https://img.shields.io/badge/Framework-Flask-green)
